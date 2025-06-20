@@ -8,6 +8,8 @@ export const LAYOUT_OPTIONS = [
   { id: LayoutType.Strip, name: "Fotócsík", iconKey: 'strip' },
 ];
 
+export const szivecske = "<3"; 
+
 export const COUNTDOWN_VALUES = [3, 5, 10]; // seconds
 
 export const FILTER_OPTIONS = [

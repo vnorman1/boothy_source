@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { LayoutType } from '../types';
 import { COUNTDOWN_VALUES, LAYOUT_OPTIONS, PHOTOS_PER_SESSION_OPTIONS } from '../constants';
 import { TakePhotoIcon, ModernCameraSwitchIcon, FlashIcon, GridIcon, StripIcon } from './icons';
@@ -32,6 +32,17 @@ const StudioSection: React.FC<StudioSectionProps> = ({
   stream, videoRef, isCameraActive, photoError,
   capturedIndividualPhotos, photosPerSession, setPhotosPerSession
 }) => {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const prevPhotoCount = useRef<number>(capturedIndividualPhotos.length);
+
+  useEffect(() => {
+    if (capturedIndividualPhotos.length > prevPhotoCount.current) {
+      // Új fotó készült, játsszuk le a hangot
+      audioRef.current?.currentTime && (audioRef.current.currentTime = 0);
+      audioRef.current?.play();
+    }
+    prevPhotoCount.current = capturedIndividualPhotos.length;
+  }, [capturedIndividualPhotos.length]);
 
   const getLayoutIcon = (layoutId: LayoutType) => {
     if (layoutId === LayoutType.Grid) return <GridIcon />;
@@ -41,6 +52,8 @@ const StudioSection: React.FC<StudioSectionProps> = ({
   
   return (
     <section id="studio" className="relative py-16 sm:py-24 border-t-2 border-stone-200">
+      {/* shutter sound */}
+      <audio ref={audioRef} src="/shutter.mp3" preload="auto" style={{ display: 'none' }} />
       <div className="absolute top-0 left-0 wow-number font-serif font-extrabold text-[15rem] sm:text-[20rem] text-stone-200/60 opacity-50 select-none">01</div>
       
       <div className="relative z-10">

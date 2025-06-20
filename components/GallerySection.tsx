@@ -1,6 +1,6 @@
 import React from 'react';
 import { FilterType, LayoutType } from '../types';
-import { FILTER_OPTIONS, PLACEHOLDER_PORTRAITS } from '../constants';
+import { FILTER_OPTIONS, PLACEHOLDER_PORTRAITS, szivecske } from '../constants';
 import { DownloadIcon, ShareIcon } from './icons';
 
 interface GallerySectionProps {
@@ -59,7 +59,7 @@ const GallerySection: React.FC<GallerySectionProps> = ({
       } // Vintage filtert is lehetne így, de most a sepia a fő
       const link = document.createElement('a');
       link.href = canvas.toDataURL('image/jpeg', 0.95);
-      link.download = `photobooth_image_${Date.now()}.jpg`;
+      link.download = `boothy_image_${Date.now()}.jpg`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -95,7 +95,7 @@ const GallerySection: React.FC<GallerySectionProps> = ({
         if (blob && navigator.share) {
           try {
             await navigator.share({
-              files: [new File([blob], `photobooth_image_${Date.now()}.jpg`, { type: 'image/jpeg' })],
+              files: [new File([blob], `boothy_image_${Date.now()}.jpg`, { type: 'image/jpeg' })],
               title: 'Boothsy képem',
               text: 'Nézd meg ezt a képet, amit a Boothsy-val csináltam! https://vnorman1.github.io/boothsy/ ',
             });
@@ -167,7 +167,7 @@ const GallerySection: React.FC<GallerySectionProps> = ({
         <div className="max-w-xl mx-auto bg-white rounded-2xl p-4 shadow-2xl">
           {renderFinalImage()}
           <div className="text-center border-t border-stone-200 pt-3 mt-4">
-            <h3 className="font-serif text-xl tracking-tight">Photobooth Project</h3>
+            <h3 className="font-serif text-xl tracking-tight">Boothy {szivecske} </h3>
           </div>
         </div>
 
