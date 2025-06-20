@@ -43,12 +43,12 @@ const CameraView: React.FC<CameraViewProps> = ({ stream, videoRef, isCameraActiv
         </div>
       )}
       {isTakingPhoto && countdown !== null && countdown > 0 && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="absolute inset-0 flex items-center justify-center" style={{background: 'rgba(0,0,0,0.5)'}}>
           <p className="text-white font-bold text-7xl font-serif animate-none" style={{letterSpacing: '0.05em'}}>{countdown}</p>
         </div>
       )}
       {isTakingPhoto && countdown === 0 && (
-         <div className="absolute inset-0 flex items-center justify-center bg-white">
+         <div className="absolute inset-0 flex items-center justify-center" style={{background: 'rgba(255,255,255,0.92)'}}>
           <p className="text-black font-bold text-5xl font-serif" style={{letterSpacing: '0.1em'}}>CSÍÍÍZ!</p>
         </div>
       )}

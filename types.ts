@@ -20,11 +20,3 @@ export interface CapturedPhoto {
   dataUrl: string;
 }
 
-// Keep this to satisfy the Gemini related instructions, although not used.
-export interface GroundingChunk {
-  web?: {
-    uri?: string;
-    title?: string;
-  };
-  // other types of chunks can be added here
-}

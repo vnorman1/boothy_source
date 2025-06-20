@@ -85,7 +85,7 @@ const StudioSection: React.FC<StudioSectionProps> = ({
                   <div 
                     key={layout.id}
                     onClick={() => !isTakingPhoto && setSelectedLayout(layout.id)}
-                    className={`cursor-pointer group p-2 rounded-lg ring-2 bg-white hover:bg-white/80 transition-all duration-300 ${selectedLayout === layout.id ? 'ring-red-600' : 'ring-transparent hover:ring-red-600/50'}`}
+                    className={`cursor-pointer group p-2 rounded-lg ring-2 bg-white hover:bg-white/80 transition-all duration-300 ${selectedLayout === layout.id ? 'ring-orange-600' : 'ring-transparent hover:ring-orange-600/50'}`}
                   >
                     {getLayoutIcon(layout.id)}
                     <p className={`text-center font-medium mt-2 text-sm ${selectedLayout === layout.id ? 'text-stone-900' : 'text-stone-600 group-hover:text-stone-900'}`}>{layout.name}</p>
@@ -136,12 +136,12 @@ const StudioSection: React.FC<StudioSectionProps> = ({
                       title="Kamera váltás" 
                       onClick={toggleCamera}
                       disabled={isTakingPhoto}
-                      className={`p-3 rounded-full hover:bg-stone-300 transition ${useFrontCamera ? 'bg-red-200 hover:bg-red-300' : 'bg-stone-200'}`}
+                      className={`p-3 rounded-full hover:bg-stone-300 transition ${useFrontCamera ? 'bg-orange-200 hover:bg-orange-300' : 'bg-stone-200'}`}
                     >
                       <ModernCameraSwitchIcon className="h-5 w-5" />
                     </button>
                     <button 
-                      title="Vaku be/ki (szimulált)" 
+                      title="Vaku be/ki" 
                       onClick={toggleFlash}
                       disabled={isTakingPhoto}
                       className={`p-3 rounded-full hover:bg-stone-300 transition ${isFlashOn ? 'bg-yellow-300 hover:bg-yellow-400' : 'bg-stone-200'}`}
@@ -161,7 +161,7 @@ const StudioSection: React.FC<StudioSectionProps> = ({
                 document.getElementById('studio')?.scrollIntoView({ behavior: 'smooth' });
                 if (!isTakingPhoto && isCameraActive) startPhotoSession();
               }}
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-5 px-6 rounded-2xl transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-red-300 shadow-xl shadow-red-500/30 text-xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-5 px-6 rounded-2xl transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-orange-300 shadow-xl shadow-orange-500/30 text-xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ pointerEvents: isTakingPhoto || !isCameraActive ? 'none' : 'auto', opacity: isTakingPhoto || !isCameraActive ? 0.5 : 1 }}
             >
               <TakePhotoIcon />

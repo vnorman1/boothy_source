@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://vnorman1.github.io/boothy/sitemap.xml

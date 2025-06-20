@@ -1,6 +1,6 @@
 import { LayoutType, FilterType } from './types';
 
-export const APP_NAME = "The Photobooth Experience";
+export const APP_NAME = "Boothsy";
 export const APP_DESCRIPTION = "Egy digitális fotóautomata, ami a te zsebedben is elfér. Minőség, stílus és egyszerűség, egy helyen.";
 
 export const LAYOUT_OPTIONS = [
@@ -27,7 +27,4 @@ export const PLACEHOLDER_PORTRAITS = [
     'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=400&fit=crop'
 ];
 
-// Models not used, but included to satisfy prompt boilerplate
-export const GEMINI_MODEL_TEXT = 'gemini-2.5-flash-preview-04-17';
-export const GEMINI_MODEL_IMAGE = 'imagen-3.0-generate-002';
 

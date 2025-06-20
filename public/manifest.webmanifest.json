@@ -1,0 +1,17 @@
+{
+  "name": "Boothy",
+  "short_name": "Boothy",
+  "description": "Modern fotófülke élmény, kreatív képek, galéria, és stúdió funkciók egy helyen.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f8f7f5",
+  "theme_color": "#f8f7f5",
+  "lang": "hu",
+  "icons": [
+    {
+      "src": "favicon_boothsy.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

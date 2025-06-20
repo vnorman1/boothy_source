@@ -96,8 +96,8 @@ const GallerySection: React.FC<GallerySectionProps> = ({
           try {
             await navigator.share({
               files: [new File([blob], `photobooth_image_${Date.now()}.jpg`, { type: 'image/jpeg' })],
-              title: 'Photobooth Képem',
-              text: 'Nézd meg ezt a képet, amit a Photobooth appal csináltam!',
+              title: 'Boothsy képem',
+              text: 'Nézd meg ezt a képet, amit a Boothsy-val csináltam! https://vnorman1.github.io/boothsy/ ',
             });
           } catch (error) {
             if (!(error && (error as any).name === 'AbortError')) {
@@ -190,7 +190,7 @@ const GallerySection: React.FC<GallerySectionProps> = ({
         <div className="mt-8">
           <button 
             onClick={onNewPhotoshoot}
-            className="text-stone-500 hover:text-red-600 font-medium transition-colors"
+            className="text-stone-500 hover:text-orange-600 font-medium transition-colors"
           >
             Új fotósorozat készítése
           </button>
@@ -199,6 +199,15 @@ const GallerySection: React.FC<GallerySectionProps> = ({
              <p className="text-center text-stone-500 mt-8">Fejezd be a fotózást és a stílusválasztást, hogy itt megjelenjen a végső kép!</p>
         )}
       </div>
+            <details className="mt-8 max-w-xl mx-auto bg-stone-100 rounded-lg p-4 text-left text-stone-700 shadow border border-stone-200">
+        <summary className="font-semibold cursor-pointer text-stone-900 text-base">Adatvédelem & működés</summary>
+        <div className="mt-3 space-y-2 text-sm leading-relaxed">
+          <p><strong>Ez a fotóautomata alkalmazás nem használ sütiket (cookie-kat),</strong> és nem követi a felhasználókat semmilyen módon.</p>
+          <p><strong>Minden elkészült fotó és beállítás kizárólag a saját eszközödön tárolódik,</strong> és nem kerül továbbításra semmilyen külső szerverre vagy harmadik félhez.</p>
+          <p>A képek és adatok csak akkor hagyják el az eszközödet, ha <strong>te magad letöltöd vagy megosztod</strong> őket.</p>
+          <p>Az alkalmazás teljesen <strong>offline is működik</strong>, az adataid felett teljes kontrollod van.</p>
+        </div>
+      </details>
     </section>
   );
 };

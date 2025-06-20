@@ -70,7 +70,7 @@ const DarkroomSection: React.FC<DarkroomSectionProps> = ({
                   <img 
                     src={composedImage || PLACEHOLDER_PORTRAITS[0]} // Use first placeholder if no composed image
                     alt={filter.name} 
-                    className={`w-full aspect-square object-cover rounded-lg ring-2 transition ${filter.className} ${selectedFilter === filter.id ? 'ring-red-600' : 'ring-transparent group-hover:ring-red-600/50'}`} 
+                    className={`w-full aspect-square object-cover rounded-lg ring-2 transition ${filter.className} ${selectedFilter === filter.id ? 'ring-orange-600' : 'ring-transparent group-hover:ring-orange-600/50'}`} 
                   />
                   <p className={`font-medium text-sm mt-2 text-center ${selectedFilter === filter.id ? 'text-stone-900' : 'text-stone-600 group-hover:text-stone-900'}`}>{filter.name}</p>
                 </div>
