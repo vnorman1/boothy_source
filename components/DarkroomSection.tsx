@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { FilterType } from '../types';
 import { FILTER_OPTIONS, PLACEHOLDER_PORTRAITS } from '../constants';
@@ -21,14 +20,14 @@ const DarkroomSection: React.FC<DarkroomSectionProps> = ({
       return <div className="w-full h-full flex items-center justify-center bg-stone-100 rounded-md"><p className="text-stone-500">Képfeldolgozás...</p></div>;
     }
     if (composedImage) {
-      return <img src={composedImage} alt="Elkészült fotósorozat" className={`w-full h-full object-contain ${activeFilterData?.className}`} />;
+      return <img src={composedImage} alt="Elkészült fotósorozat" className={`w-full h-full object-contain aspect-[1/1] ${activeFilterData?.className}`} />;
     }
     // Placeholder rendering based on layout type
     if (currentLayoutRendersGrid) {
         return (
             <div className="w-full h-full grid grid-cols-2 gap-2">
                 {PLACEHOLDER_PORTRAITS.map((src, index) => (
-                    <div key={index} className="aspect-square bg-cover bg-center rounded-md filter grayscale" style={{backgroundImage: `url('${src}')`}}></div>
+                    <div key={index} className="aspect-[1/1] bg-cover bg-center rounded-md filter grayscale" style={{backgroundImage: `url('${src}')`}}></div>
                 ))}
             </div>
         );

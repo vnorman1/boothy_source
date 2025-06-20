@@ -1,7 +1,0 @@
-{
-  "name": "The Photobooth Experience",
-  "description": "A digital photobooth application that fits in your pocket. Quality, style, and simplicity in one place. Capture, style, and share your memories.",
-  "requestFramePermissions": [
-    "camera"
-  ]
-}

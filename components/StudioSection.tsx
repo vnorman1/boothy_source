@@ -63,12 +63,12 @@ const StudioSection: React.FC<StudioSectionProps> = ({
             {capturedIndividualPhotos.length > 0 && (
                 <div className="mt-4 p-2 bg-stone-100 rounded-lg">
                     <h4 className="text-sm font-medium text-stone-600 mb-2">Elkészült képek ({capturedIndividualPhotos.length}/{photosPerSession}):</h4>
-                    <div className={`grid grid-cols-${Math.min(photosPerSession, 4)} gap-2`}>
+                    <div className={`grid gap-2 ${photosPerSession === 4 ? 'grid-cols-4' : photosPerSession === 6 ? 'grid-cols-3' : 'grid-cols-4'}`}>
                         {capturedIndividualPhotos.map((photoSrc, index) => (
-                            <img key={index} src={photoSrc} alt={`Captured ${index + 1}`} className="w-full aspect-square object-cover rounded-md border-2 border-stone-300" />
+                            <img key={index} src={photoSrc} alt={`Captured ${index + 1}`} className="w-full aspect-[1/1] object-cover rounded-md border-2 border-stone-300" />
                         ))}
                         {Array.from({ length: photosPerSession - capturedIndividualPhotos.length }).map((_, index) => (
-                            <div key={`placeholder-${index}`} className="w-full aspect-square bg-stone-200 rounded-md"></div>
+                            <div key={`placeholder-${index}`} className="w-full aspect-[1/1] bg-stone-200 rounded-md"></div>
                         ))}
                     </div>
                 </div>

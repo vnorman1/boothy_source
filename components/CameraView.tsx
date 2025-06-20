@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface CameraViewProps {
@@ -13,14 +12,14 @@ interface CameraViewProps {
 
 const CameraView: React.FC<CameraViewProps> = ({ stream, videoRef, isCameraActive, isTakingPhoto, countdown, useFrontCamera, photoError }) => {
   return (
-    <div className="w-full aspect-square bg-black rounded-2xl flex items-center justify-center p-2 sm:p-8 shadow-2xl ring-4 ring-offset-8 ring-stone-900 ring-offset-stone-50 relative overflow-hidden">
+    <div className="w-full aspect-[1/1] bg-black rounded-2xl flex items-center justify-center p-2 sm:p-8 shadow-2xl ring-4 ring-offset-4 ring-stone-900 ring-offset-stone-50 relative overflow-hidden">
       {isCameraActive && stream ? (
         <video
           ref={videoRef}
           autoPlay
           playsInline
           muted // Important for autoplay
-          className={`w-full h-full object-cover rounded-xl ${useFrontCamera ? 'transform -scale-x-100' : ''}`}
+          className={`w-full h-full object-cover rounded-xl ${useFrontCamera ? 'scale-x-[-1]' : ''}`}
           onLoadedMetadata={() => {
             // Ensure video starts playing once metadata is loaded
             if (videoRef.current) {
@@ -45,12 +44,12 @@ const CameraView: React.FC<CameraViewProps> = ({ stream, videoRef, isCameraActiv
       )}
       {isTakingPhoto && countdown !== null && countdown > 0 && (
         <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <p className="text-white font-bold text-9xl font-serif animate-ping">{countdown}</p>
+          <p className="text-white font-bold text-7xl font-serif animate-none" style={{letterSpacing: '0.05em'}}>{countdown}</p>
         </div>
       )}
       {isTakingPhoto && countdown === 0 && (
-         <div className="absolute inset-0 flex items-center justify-center bg-white animate-pulse">
-          <p className="text-black font-bold text-6xl font-serif">CSÍÍÍZ!</p>
+         <div className="absolute inset-0 flex items-center justify-center bg-white">
+          <p className="text-black font-bold text-5xl font-serif" style={{letterSpacing: '0.1em'}}>CSÍÍÍZ!</p>
         </div>
       )}
     </div>

@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+/* Vintage filter utility */
+.filter.vintage {
+  filter: sepia(0.4) contrast(1) saturate(1.5) grayscale(0.3);
+}

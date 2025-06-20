@@ -323,42 +323,52 @@ const App: React.FC = () => {
     }
   };
   
+  const getCanvasFilterString = (filter: FilterType): string => {
+    switch (filter) {
+      case FilterType.Original:
+        return 'none';
+      case FilterType.BlackAndWhite:
+        return 'grayscale(1)';
+      case FilterType.Sepia:
+        return 'sepia(1)';
+      case FilterType.Vintage:
+        return 'sepia(0.6) contrast(1.1) brightness(0.9) saturate(1.2)';
+      default:
+        return 'none';
+    }
+  };
+
   const handleDownload = () => {
     if (!composedImage || !compositionCanvasRef.current) return;
 
-    // The composedImage already has the layout (grid/strip). Filters are applied visually.
-    // For download, we need to apply the filter to the composedImage.
-    const originalCanvas = compositionCanvasRef.current; // This canvas holds the unfiltered composed image
+    const originalCanvas = compositionCanvasRef.current;
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = originalCanvas.width;
     tempCanvas.height = originalCanvas.height;
     const tempCtx = tempCanvas.getContext('2d');
 
     if (!tempCtx) return;
-    
-    const img = new Image();
+
+    const img = new window.Image();
     img.onload = () => {
-        const filterData = FILTER_OPTIONS.find(f => f.id === selectedFilter);
-        if (filterData && filterData.className) {
-            const cssFilterValue = filterData.className.replace('filter ', '').split(' ').map(s => {
-              if (s === 'grayscale') return 'grayscale(1)';
-              if (s === 'sepia') return 'sepia(1)';
-              if (s === 'vintage') return 'sepia(0.6) contrast(1.1) brightness(0.9) saturate(1.2)';
-              return s;
-            }).join(' ');
-            tempCtx.filter = cssFilterValue;
-        }
-        tempCtx.drawImage(img, 0, 0); // Draw the (unfiltered) composed image onto temp canvas with filter
-        
-        const dataUrl = tempCanvas.toDataURL('image/jpeg', 0.95);
-        const link = document.createElement('a');
-        link.href = dataUrl;
-        link.download = `photobooth_image_${Date.now()}.jpg`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+      // Mindig explicit filter stringet állítunk be
+      let filterString = 'none';
+      if (selectedFilter === FilterType.BlackAndWhite) filterString = 'grayscale(1)';
+      else if (selectedFilter === FilterType.Sepia) filterString = 'sepia(1)';
+      else if (selectedFilter === FilterType.Vintage) filterString = 'sepia(0.6) contrast(1.1) brightness(0.9) saturate(1.2)';
+      tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+      tempCtx.filter = filterString;
+      tempCtx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
+      tempCtx.filter = 'none';
+      const link = document.createElement('a');
+      link.href = tempCanvas.toDataURL('image/jpeg', 0.95);
+      link.download = `photobooth_image_${Date.now()}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     };
-    img.src = composedImage; // composedImage is the DataURL of the unfiltered composed image
+    img.crossOrigin = 'anonymous';
+    img.src = composedImage;
   };
 
   const handleShare = async () => {
