@@ -1,18 +1,18 @@
 // Egyszerű PWA service worker: cache-elés, offline fallback
 const CACHE_NAME = 'boothy-cache-v1';
-const OFFLINE_URL = '/index.html';
+const OFFLINE_URL = '/boothy/index.html'; // Az offline fallback oldal
 
 const toCache = [
-  './',
-  './index.html',
-  './global.css', //csere a dist mappában lévőre
-  './favicon_boothy.png',
-  './manifest.webmanifest.json',
-  './og_boothy.png',
-  './robots.txt',
-  './shutter.mp3',
-  './sitemap.xml',
-  './index.js'  // statikus assetek, még kell a js build után
+  '/boothy/',
+  '/boothy/index.html',
+  '/boothy/assets/index-CCPxNsiu.css.css', //csere a dist mappában lévőre
+  '/boothy/favicon_boothy.png',
+  '/boothy/manifest.webmanifest.json',
+  '/boothy/og_boothy.png',
+  '/boothy/robots.txt',
+  '/boothy/shutter.mp3',
+  '/boothy/sitemap.xml',
+  '/boothy/assets/index-B_qPJmJ6.js'  // statikus assetek, még kell a js build után
 ];
 
 self.addEventListener('install', (event) => {
