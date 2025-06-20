@@ -1,0 +1,22 @@
+
+{
+  "short_name": "Photobooth",
+  "name": "The Photobooth Experience",
+  "icons": [
+    {
+      "src": "icons/icon-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icons/icon-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "./index.html",
+  "display": "standalone",
+  "theme_color": "#f8f7f5",
+  "background_color": "#f8f7f5",
+  "description": "A digital photobooth that fits in your pocket."
+}
