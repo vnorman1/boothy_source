@@ -3,7 +3,7 @@ import React from 'react';
 
 interface CameraViewProps {
   stream: MediaStream | null;
-  videoRef: React.RefObject<HTMLVideoElement>;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
   isCameraActive: boolean;
   isTakingPhoto: boolean;
   countdown: number | null;
@@ -21,6 +21,14 @@ const CameraView: React.FC<CameraViewProps> = ({ stream, videoRef, isCameraActiv
           playsInline
           muted // Important for autoplay
           className={`w-full h-full object-cover rounded-xl ${useFrontCamera ? 'transform -scale-x-100' : ''}`}
+          onLoadedMetadata={() => {
+            // Ensure video starts playing once metadata is loaded
+            if (videoRef.current) {
+              videoRef.current.play().catch(err => {
+                console.error("Error starting video playback:", err);
+              });
+            }
+          }}
         />
       ) : (
         <div className="text-center">

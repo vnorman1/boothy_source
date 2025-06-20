@@ -1,4 +1,3 @@
-
 import { LayoutType, FilterType } from './types';
 
 export const APP_NAME = "The Photobooth Experience";
@@ -18,7 +17,7 @@ export const FILTER_OPTIONS = [
   { id: FilterType.Vintage, name: "Vintage", className: "filter vintage" }, // Ensure 'vintage' is defined in tailwind.config
 ];
 
-export const PHOTOS_PER_SESSION = 4; // All layouts take 4 photos
+export const PHOTOS_PER_SESSION_OPTIONS = [4, 6, 8];
 
 // Example placeholder images from the original HTML
 export const PLACEHOLDER_PORTRAITS = [

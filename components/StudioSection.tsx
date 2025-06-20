@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { LayoutType } from '../types';
-import { COUNTDOWN_VALUES, LAYOUT_OPTIONS } from '../constants';
+import { COUNTDOWN_VALUES, LAYOUT_OPTIONS, PHOTOS_PER_SESSION_OPTIONS } from '../constants';
 import { TakePhotoIcon, ModernCameraSwitchIcon, FlashIcon, GridIcon, StripIcon } from './icons';
 import CameraView from './CameraView';
 
@@ -18,10 +17,12 @@ interface StudioSectionProps {
   isTakingPhoto: boolean;
   activeCountdown: number | null;
   stream: MediaStream | null;
-  videoRef: React.RefObject<HTMLVideoElement>;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
   isCameraActive: boolean;
   photoError: string | null;
   capturedIndividualPhotos: string[];
+  photosPerSession: number;
+  setPhotosPerSession: (n: number) => void;
 }
 
 const StudioSection: React.FC<StudioSectionProps> = ({
@@ -29,7 +30,7 @@ const StudioSection: React.FC<StudioSectionProps> = ({
   useFrontCamera, toggleCamera, isFlashOn, toggleFlash,
   startPhotoSession, isTakingPhoto, activeCountdown,
   stream, videoRef, isCameraActive, photoError,
-  capturedIndividualPhotos
+  capturedIndividualPhotos, photosPerSession, setPhotosPerSession
 }) => {
 
   const getLayoutIcon = (layoutId: LayoutType) => {
@@ -61,12 +62,12 @@ const StudioSection: React.FC<StudioSectionProps> = ({
              {/* Captured photo thumbnails */}
             {capturedIndividualPhotos.length > 0 && (
                 <div className="mt-4 p-2 bg-stone-100 rounded-lg">
-                    <h4 className="text-sm font-medium text-stone-600 mb-2">Elkészült képek ({capturedIndividualPhotos.length}/4):</h4>
-                    <div className="grid grid-cols-4 gap-2">
+                    <h4 className="text-sm font-medium text-stone-600 mb-2">Elkészült képek ({capturedIndividualPhotos.length}/{photosPerSession}):</h4>
+                    <div className={`grid grid-cols-${Math.min(photosPerSession, 4)} gap-2`}>
                         {capturedIndividualPhotos.map((photoSrc, index) => (
                             <img key={index} src={photoSrc} alt={`Captured ${index + 1}`} className="w-full aspect-square object-cover rounded-md border-2 border-stone-300" />
                         ))}
-                        {Array.from({ length: 4 - capturedIndividualPhotos.length }).map((_, index) => (
+                        {Array.from({ length: photosPerSession - capturedIndividualPhotos.length }).map((_, index) => (
                             <div key={`placeholder-${index}`} className="w-full aspect-square bg-stone-200 rounded-md"></div>
                         ))}
                     </div>
@@ -97,6 +98,22 @@ const StudioSection: React.FC<StudioSectionProps> = ({
             <div id="studio-settings">
               <h3 className="font-bold text-xl mb-5">Beállítások</h3>
               <div className="space-y-6 p-6 bg-white/70 rounded-xl border border-stone-200">
+                <div className="flex flex-col gap-y-3 sm:flex-row sm:items-center sm:justify-between">
+                  <label className="font-medium text-stone-700">Képek száma:</label>
+                  <div className="flex items-center gap-1 bg-stone-200 p-1 rounded-full self-start sm:self-center">
+                    {PHOTOS_PER_SESSION_OPTIONS.map(val => (
+                      <button
+                        key={val}
+                        onClick={() => !isTakingPhoto && (selectedLayout === LayoutType.Strip || val === 4) && setPhotosPerSession(val)}
+                        className={`px-4 py-1 text-sm font-semibold rounded-full transition ${photosPerSession === val ? 'bg-stone-900 text-white' : 'hover:bg-white/80'} ${selectedLayout === LayoutType.Grid && val !== 4 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        disabled={isTakingPhoto || (selectedLayout === LayoutType.Grid && val !== 4)}
+                      >
+                        {val} kép
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="flex flex-col gap-y-3 sm:flex-row sm:items-center sm:justify-between">
                   <label className="font-medium text-stone-700">Visszaszámláló:</label>
                   <div className="flex items-center gap-1 bg-stone-200 p-1 rounded-full self-start sm:self-center">
@@ -137,14 +154,19 @@ const StudioSection: React.FC<StudioSectionProps> = ({
             </div>
 
             {/* Fő Akciógomb */}
-            <button 
-              onClick={startPhotoSession}
-              disabled={isTakingPhoto || !isCameraActive}
+            <a
+              href="#studio"
+              onClick={e => {
+                e.preventDefault();
+                document.getElementById('studio')?.scrollIntoView({ behavior: 'smooth' });
+                if (!isTakingPhoto && isCameraActive) startPhotoSession();
+              }}
               className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-5 px-6 rounded-2xl transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-red-300 shadow-xl shadow-red-500/30 text-xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ pointerEvents: isTakingPhoto || !isCameraActive ? 'none' : 'auto', opacity: isTakingPhoto || !isCameraActive ? 0.5 : 1 }}
             >
               <TakePhotoIcon />
               <span>{isTakingPhoto ? 'Fotózás Folyamatban...' : 'Fotózás Indítása'}</span>
-            </button>
+            </a>
           </div>
         </div>
       </div>

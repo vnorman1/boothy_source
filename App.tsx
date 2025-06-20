@@ -1,7 +1,6 @@
-
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { LayoutType, FilterType, CapturedPhoto } from './types';
-import { COUNTDOWN_VALUES, FILTER_OPTIONS, PHOTOS_PER_SESSION } from './constants';
+import React, { useState, useEffect, useRef } from 'react';
+import { LayoutType, FilterType } from './types';
+import { COUNTDOWN_VALUES, FILTER_OPTIONS, PHOTOS_PER_SESSION_OPTIONS } from './constants';
 import HeroSection from './components/HeroSection';
 import StudioSection from './components/StudioSection';
 import DarkroomSection from './components/DarkroomSection';
@@ -28,44 +27,90 @@ const App: React.FC = () => {
   const [activeCountdown, setActiveCountdown] = useState<number | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [isComposing, setIsComposing] = useState<boolean>(false);
+  const [cameraRestartKey, setCameraRestartKey] = useState(0);
+  const [photosPerSession, setPhotosPerSession] = useState<number>(4);
 
-  // Start camera
-  const startCamera = useCallback(async (front: boolean) => {
-    try {
-      setPhotoError(null);
-      if (stream) { // Stop existing stream before starting a new one
-        stream.getTracks().forEach(track => track.stop());
-      }
-      const newStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          facingMode: front ? 'user' : 'environment',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        } 
-      });
-      setStream(newStream);
-      setIsCameraActive(true);
-      if (videoRef.current) {
-        videoRef.current.srcObject = newStream;
-      }
-    } catch (err) {
-      console.error("Error accessing camera:", err);
-      setPhotoError("Kamera nem elérhető. Engedélyezd a böngésződben!");
-      setIsCameraActive(false);
-      setStream(null);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stream]); // videoRef is stable, no need to include
+  // Ref a fotózás állapotához, hogy az async ciklusban mindig naprakész legyen
+  const isTakingPhotoRef = useRef(isTakingPhoto);
+  useEffect(() => { isTakingPhotoRef.current = isTakingPhoto; }, [isTakingPhoto]);
 
   useEffect(() => {
-    startCamera(useFrontCamera);
-    return () => {
+    let mounted = true;
+    let activeWebcamStream: MediaStream | null = null;
+
+    const initCamera = async () => {
+      // Stop any stream currently on the video element from previous effect runs
+      if (videoRef.current && videoRef.current.srcObject) {
+        const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
+        tracks.forEach(track => track.stop());
+        videoRef.current.srcObject = null;
+      }
+      // Also ensure global stream state reflects that we are stopping the old one
+      // This is complex if multiple things manage 'stream'. Simpler: this effect owns its stream.
+      // If 'stream' state holds a stream, it *should* be the one this effect is replacing or one that needs stopping.
       if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+          stream.getTracks().forEach(track => track.stop());
+      }
+
+      try {
+        setPhotoError(null);
+        const newStream = await navigator.mediaDevices.getUserMedia({
+          video: { 
+            facingMode: useFrontCamera ? 'user' : 'environment',
+            width: { ideal: 1280 }, // Request higher resolution
+            height: { ideal: 720 }
+          }
+        });
+
+        if (!mounted) {
+          newStream.getTracks().forEach(track => track.stop());
+          return;
+        }
+
+        activeWebcamStream = newStream;
+        setStream(newStream); 
+        setIsCameraActive(true);
+        if (videoRef.current) {
+          videoRef.current.srcObject = newStream;
+          // Ensure video starts playing
+          videoRef.current.play().catch(err => {
+            console.error("Error playing video:", err);
+          });
+        }
+      } catch (err) {
+        if (!mounted) return;
+        console.error("Error accessing camera:", err);
+        setPhotoError("Kamera nem elérhető. Engedélyezd a böngésződben!");
+        setIsCameraActive(false);
+        setStream(null); // Clear stream state on error
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [useFrontCamera]); // Removed startCamera from deps to avoid loop with its own stream dep
+
+    initCamera();
+
+    return () => {
+      mounted = false;
+      if (activeWebcamStream) {
+        activeWebcamStream.getTracks().forEach(track => track.stop());
+      }
+      // If the stream set by this specific effect instance is still on videoRef, clear it.
+      if (videoRef.current && videoRef.current.srcObject === activeWebcamStream) {
+          videoRef.current.srcObject = null;
+      }
+      // Do not set global 'stream' to null here, as a new effect (e.g. from cameraRestartKey change)
+      // might have already started a new stream. The new effect run will handle its own setup.
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [useFrontCamera, cameraRestartKey]); // videoRef is stable. setState functions are stable.
+
+  // Mindig állítsuk be a video elem srcObject-ját, ha a stream vagy a ref változik
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      if (videoRef.current.srcObject !== stream) {
+        videoRef.current.srcObject = stream;
+      }
+    }
+  }, [stream, videoRef]);
 
   const toggleCamera = () => {
     if (isTakingPhoto) return;
@@ -78,18 +123,22 @@ const App: React.FC = () => {
   };
 
   const captureFrame = (): string | null => {
-    if (videoRef.current && captureCanvasRef.current && isCameraActive) {
+    if (videoRef.current && captureCanvasRef.current && isCameraActive && videoRef.current.readyState >= videoRef.current.HAVE_METADATA) {
       const video = videoRef.current;
       const canvas = captureCanvasRef.current;
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        if (useFrontCamera) { // Flip horizontal for front camera
+        if (useFrontCamera) { // Flip horizontal for front camera preview consistency
+          ctx.save(); // Save context state
           ctx.translate(canvas.width, 0);
           ctx.scale(-1, 1);
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          ctx.restore(); // Restore context state
+        } else {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         }
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         return canvas.toDataURL('image/jpeg', 0.9);
       }
     }
@@ -97,21 +146,24 @@ const App: React.FC = () => {
   };
 
   const startPhotoSession = async () => {
-    if (!isCameraActive || isTakingPhoto) return;
+    if (!isCameraActive || isTakingPhotoRef.current || !stream) {
+      if (!stream || !isCameraActive) setPhotoError("Kamera nem aktív. Próbáld újraindítani.");
+      return;
+    }
     setIsTakingPhoto(true);
     setCapturedIndividualPhotos([]);
-    setComposedImage(null); // Clear previous composed image
+    setComposedImage(null); 
     setPhotoError(null);
 
     const photos: string[] = [];
-    for (let i = 0; i < PHOTOS_PER_SESSION; i++) {
+    for (let i = 0; i < photosPerSession; i++) {
       setActiveCountdown(countdownDuration);
       for (let s = countdownDuration; s > 0; s--) {
         await new Promise(resolve => setTimeout(resolve, 1000));
+        if (!isTakingPhotoRef.current) return; // Session aborted
         setActiveCountdown(s - 1);
       }
-      
-      // Simulate flash
+      // Flash effect
       if (isFlashOn) {
         const overlay = document.createElement('div');
         overlay.style.position = 'fixed';
@@ -123,14 +175,19 @@ const App: React.FC = () => {
         overlay.style.zIndex = '9999';
         overlay.style.opacity = '0.8';
         document.body.appendChild(overlay);
-        await new Promise(resolve => setTimeout(resolve, 100)); // Flash duration
+        await new Promise(resolve => setTimeout(resolve, 100)); 
         document.body.removeChild(overlay);
-        await new Promise(resolve => setTimeout(resolve, 50)); // Short pause after flash
+        await new Promise(resolve => setTimeout(resolve, 50)); 
       } else {
-        await new Promise(resolve => setTimeout(resolve, 150)); // Small delay for "shutter"
+        await new Promise(resolve => setTimeout(resolve, 150)); 
       }
-      
-      const photoDataUrl = captureFrame();
+      // Próbáljuk többször a captureFrame-et, ha elsőre nem sikerül
+      let photoDataUrl: string | null = null;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        photoDataUrl = captureFrame();
+        if (photoDataUrl) break;
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
       if (photoDataUrl) {
         photos.push(photoDataUrl);
         setCapturedIndividualPhotos(prev => [...prev, photoDataUrl]);
@@ -140,82 +197,141 @@ const App: React.FC = () => {
         setActiveCountdown(null);
         return;
       }
-      if (i < PHOTOS_PER_SESSION - 1) {
-         await new Promise(resolve => setTimeout(resolve, 1000)); // Pause between photos
+      if (i < photosPerSession - 1) {
+         await new Promise(resolve => setTimeout(resolve, 1000)); 
       }
     }
-    
-    setIsTakingPhoto(false);
+    setIsTakingPhoto(false); // Done with capturing individual photos
     setActiveCountdown(null);
-    if (photos.length === PHOTOS_PER_SESSION) {
+    if (photos.length === photosPerSession) {
       composeFinalImage(photos, selectedLayout);
     }
   };
 
-  const composeFinalImage = (photos: string[], layout: LayoutType) => {
+  const composeFinalImage = async (photos: string[], layout: LayoutType) => {
     setIsComposing(true);
+    setPhotoError(null); 
     const canvas = compositionCanvasRef.current;
     if (!canvas) {
+      setPhotoError("Belső hiba: A vászon nem elérhető.");
       setIsComposing(false);
       return;
     }
     const ctx = canvas.getContext('2d');
     if (!ctx) {
+      setPhotoError("Belső hiba: A vászon kontextus nem elérhető.");
       setIsComposing(false);
       return;
     }
 
-    const PADDING = 20; // Padding around images and canvas
-    const IMAGE_SIZE = 400; // Assuming square images for simplicity in grid/strip
+    const PADDING = 20;
+    const IMAGE_SIZE = 400; // Base size for grid cells (IMAGE_SIZE x IMAGE_SIZE) and strip width
 
-    if (layout === LayoutType.Grid) {
-      canvas.width = IMAGE_SIZE * 2 + PADDING * 3;
-      canvas.height = IMAGE_SIZE * 2 + PADDING * 3;
-      ctx.fillStyle = "white"; // Background for the composition
-      ctx.fillRect(0,0,canvas.width, canvas.height);
+    const imagePromises = photos.map(photoSrc => {
+        return new Promise<HTMLImageElement>((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = (e) => {
+                console.error(`Failed to load image: ${photoSrc}`, e);
+                reject(new Error(`Kép betöltése sikertelen: ${photoSrc.substring(0,30)}...`));
+            }
+            img.src = photoSrc;
+        });
+    });
 
-      photos.forEach((photoSrc, index) => {
-        const img = new Image();
-        img.onload = () => {
-          const row = Math.floor(index / 2);
-          const col = index % 2;
-          ctx.drawImage(img, PADDING + col * (IMAGE_SIZE + PADDING), PADDING + row * (IMAGE_SIZE + PADDING), IMAGE_SIZE, IMAGE_SIZE);
-          if (index === photos.length - 1) { // Last image loaded
-            setComposedImage(canvas.toDataURL('image/jpeg', 0.9));
-            setIsComposing(false);
-            document.getElementById('darkroom')?.scrollIntoView({ behavior: 'smooth' });
-          }
-        };
-        img.src = photoSrc;
-      });
-    } else { // LayoutType.Strip (vertical)
-      canvas.width = IMAGE_SIZE + PADDING * 2;
-      canvas.height = IMAGE_SIZE * 4 + PADDING * 5;
-      ctx.fillStyle = "white";
-      ctx.fillRect(0,0,canvas.width, canvas.height);
+    try {
+        const loadedImages = await Promise.all(imagePromises);
 
-      photos.forEach((photoSrc, index) => {
-        const img = new Image();
-        img.onload = () => {
-          ctx.drawImage(img, PADDING, PADDING + index * (IMAGE_SIZE + PADDING), IMAGE_SIZE, IMAGE_SIZE);
-          if (index === photos.length - 1) {
-            setComposedImage(canvas.toDataURL('image/jpeg', 0.9));
-            setIsComposing(false);
-            document.getElementById('darkroom')?.scrollIntoView({ behavior: 'smooth' });
-          }
-        };
-        img.src = photoSrc;
-      });
+        if (layout === LayoutType.Grid) {
+            canvas.width = IMAGE_SIZE * 2 + PADDING * 3;
+            canvas.height = IMAGE_SIZE * 2 + PADDING * 3;
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            loadedImages.forEach((img, index) => {
+                const row = Math.floor(index / 2);
+                const col = index % 2;
+                
+                const sourceAspectRatio = img.naturalWidth / img.naturalHeight;
+                const targetAspectRatio = 1; // Square cells
+                
+                let sourceX = 0, sourceY = 0, sourceWidth = img.naturalWidth, sourceHeight = img.naturalHeight;
+                
+                // Crop the source image to fit the target aspect ratio without stretching
+                if (sourceAspectRatio > targetAspectRatio) {
+                    // Source is wider - crop horizontally
+                    sourceWidth = img.naturalHeight * targetAspectRatio;
+                    sourceX = (img.naturalWidth - sourceWidth) / 2;
+                } else if (sourceAspectRatio < targetAspectRatio) {
+                    // Source is taller - crop vertically  
+                    sourceHeight = img.naturalWidth / targetAspectRatio;
+                    sourceY = (img.naturalHeight - sourceHeight) / 2;
+                }
+                
+                const destX = PADDING + col * (IMAGE_SIZE + PADDING);
+                const destY = PADDING + row * (IMAGE_SIZE + PADDING);
+                
+                ctx.drawImage(
+                    img, 
+                    sourceX, sourceY, sourceWidth, sourceHeight,  // Source rectangle
+                    destX, destY, IMAGE_SIZE, IMAGE_SIZE           // Destination rectangle
+                );
+            });
+        } else { // LayoutType.Strip (vertical)
+            const TARGET_STRIP_IMAGE_WIDTH = IMAGE_SIZE;
+            
+            // Calculate dimensions while maintaining aspect ratios
+            let totalScaledHeight = 0;
+            const scaledDimensions = loadedImages.map(img => {
+                const aspectRatio = img.naturalHeight / img.naturalWidth;
+                const scaledHeight = aspectRatio * TARGET_STRIP_IMAGE_WIDTH;
+                totalScaledHeight += scaledHeight;
+                return { img, scaledHeight, aspectRatio };
+            });
+
+            canvas.width = TARGET_STRIP_IMAGE_WIDTH + PADDING * 2;
+            canvas.height = totalScaledHeight + (loadedImages.length + 1) * PADDING; 
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            let currentYOffset = PADDING;
+            scaledDimensions.forEach(({ img, scaledHeight }) => {
+                // Draw the image maintaining its aspect ratio
+                ctx.drawImage(
+                    img,
+                    0, 0, img.naturalWidth, img.naturalHeight,     // Source: full image
+                    PADDING, currentYOffset, TARGET_STRIP_IMAGE_WIDTH, scaledHeight  // Destination: scaled to fit width
+                );
+                currentYOffset += scaledHeight + PADDING;
+            });
+        }
+        
+        const composedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        setComposedImage(composedDataUrl);
+        // Scroll after state update ensures DarkroomSection has the new image
+        requestAnimationFrame(() => { // Ensure DOM is updated before scrolling
+             document.getElementById('darkroom')?.scrollIntoView({ behavior: 'smooth' });
+        });
+
+
+    } catch (error: any) {
+        console.error("Error during image composition:", error);
+        setPhotoError(error.message || "Hiba a képek összeállítása közben.");
+        setComposedImage(null); 
+    } finally {
+        setIsComposing(false);
     }
   };
   
   const handleDownload = () => {
     if (!composedImage || !compositionCanvasRef.current) return;
 
-    const canvas = compositionCanvasRef.current;
+    // The composedImage already has the layout (grid/strip). Filters are applied visually.
+    // For download, we need to apply the filter to the composedImage.
+    const originalCanvas = compositionCanvasRef.current; // This canvas holds the unfiltered composed image
     const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = canvas.width;
-    tempCanvas.height = canvas.height;
+    tempCanvas.width = originalCanvas.width;
+    tempCanvas.height = originalCanvas.height;
     const tempCtx = tempCanvas.getContext('2d');
 
     if (!tempCtx) return;
@@ -224,17 +340,15 @@ const App: React.FC = () => {
     img.onload = () => {
         const filterData = FILTER_OPTIONS.find(f => f.id === selectedFilter);
         if (filterData && filterData.className) {
-            // Extract actual filter values like 'grayscale(1)' from 'filter grayscale'
             const cssFilterValue = filterData.className.replace('filter ', '').split(' ').map(s => {
               if (s === 'grayscale') return 'grayscale(1)';
               if (s === 'sepia') return 'sepia(1)';
-              // Add more mappings if 'vintage' or others have complex CSS
               if (s === 'vintage') return 'sepia(0.6) contrast(1.1) brightness(0.9) saturate(1.2)';
               return s;
             }).join(' ');
             tempCtx.filter = cssFilterValue;
         }
-        tempCtx.drawImage(img, 0, 0);
+        tempCtx.drawImage(img, 0, 0); // Draw the (unfiltered) composed image onto temp canvas with filter
         
         const dataUrl = tempCanvas.toDataURL('image/jpeg', 0.95);
         const link = document.createElement('a');
@@ -244,17 +358,16 @@ const App: React.FC = () => {
         link.click();
         document.body.removeChild(link);
     };
-    img.src = composedImage;
+    img.src = composedImage; // composedImage is the DataURL of the unfiltered composed image
   };
 
   const handleShare = async () => {
     if (!composedImage || !compositionCanvasRef.current) return;
-
-    // Apply filter to a temporary canvas for sharing
-    const canvas = compositionCanvasRef.current;
+    
+    const originalCanvas = compositionCanvasRef.current;
     const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = canvas.width;
-    tempCanvas.height = canvas.height;
+    tempCanvas.width = originalCanvas.width;
+    tempCanvas.height = originalCanvas.height;
     const tempCtx = tempCanvas.getContext('2d');
 
     if (!tempCtx) {
@@ -291,7 +404,9 @@ const App: React.FC = () => {
             }
         } catch (error) {
             console.error('Error sharing:', error);
-            alert("Megosztás nem sikerült vagy megszakították.");
+            if ((error as Error).name !== 'AbortError') { // Don't alert if user simply cancelled share dialog
+                alert("Megosztás nem sikerült vagy megszakították.");
+            }
         }
     };
     img.src = composedImage;
@@ -301,16 +416,42 @@ const App: React.FC = () => {
     setCapturedIndividualPhotos([]);
     setComposedImage(null);
     setSelectedFilter(FilterType.Original);
-    setIsTakingPhoto(false);
+    setIsTakingPhoto(false); // Ensure photo taking state is reset
     setActiveCountdown(null);
     setPhotoError(null);
     setIsComposing(false);
-    // Optionally restart camera if it was stopped or errored
+    
     if (!isCameraActive) {
-      startCamera(useFrontCamera);
+      setCameraRestartKey(key => key + 1); // Trigger camera re-init by changing key
     }
-    document.getElementById('studio')?.scrollIntoView({ behavior: 'smooth' });
+    // Smooth scroll to studio section
+    requestAnimationFrame(() => {
+        document.getElementById('studio')?.scrollIntoView({ behavior: 'smooth' });
+    });
   };
+
+  // Effect to re-evaluate selectedLayout for composition if individual photos change
+  // This is useful if layout is changed *after* photos are taken but *before* darkroom
+  // However, current flow: take photos -> compose -> then darkroom. So compose uses current layout.
+  // If layout changes when `composedImage` exists, we might want to re-compose.
+  // For now, composition happens once after taking photos.
+  // To re-compose on layout change:
+  /*
+  useEffect(() => {
+    if (capturedIndividualPhotos.length === PHOTOS_PER_SESSION && !isTakingPhoto) {
+      composeFinalImage(capturedIndividualPhotos, selectedLayout);
+    }
+  }, [selectedLayout, capturedIndividualPhotos, isTakingPhoto]); // Careful with deps
+  */
+  // This might be too aggressive. Let's stick to composing once after capture.
+  // User can restart if they want different layout with same subjects.
+
+  // Csak strip layoutnál engedjük a 4/6/8 választást, gridnél fixen 4
+  useEffect(() => {
+    if (selectedLayout === LayoutType.Grid && photosPerSession !== 4) {
+      setPhotosPerSession(4);
+    }
+  }, [selectedLayout]);
 
   return (
     <div className="bg-stone-50 min-h-screen">
@@ -318,7 +459,14 @@ const App: React.FC = () => {
       <main className="container mx-auto max-w-5xl px-4">
         <StudioSection
           selectedLayout={selectedLayout}
-          setSelectedLayout={setSelectedLayout}
+          setSelectedLayout={(layout) => {
+            if (composedImage) {
+                 if(capturedIndividualPhotos.length === photosPerSession && !isTakingPhoto && !isComposing) {
+                    composeFinalImage(capturedIndividualPhotos, layout);
+                 }
+            }
+            setSelectedLayout(layout);
+          }}
           countdown={countdownDuration}
           setCountdown={setCountdownDuration}
           useFrontCamera={useFrontCamera}
@@ -333,6 +481,8 @@ const App: React.FC = () => {
           isCameraActive={isCameraActive}
           photoError={photoError}
           capturedIndividualPhotos={capturedIndividualPhotos}
+          photosPerSession={photosPerSession}
+          setPhotosPerSession={setPhotosPerSession}
         />
         <DarkroomSection
           composedImage={composedImage}
@@ -342,7 +492,7 @@ const App: React.FC = () => {
           currentLayoutRendersGrid={selectedLayout === LayoutType.Grid}
         />
         <GallerySection
-          finalImage={composedImage} // Gallery displays the composed image, filter is via CSS class
+          finalImage={composedImage}
           selectedFilter={selectedFilter}
           onDownload={handleDownload}
           onShare={handleShare}
@@ -352,7 +502,6 @@ const App: React.FC = () => {
         />
       </main>
       <FooterSection />
-      {/* Hidden canvases for operations */}
       <canvas ref={captureCanvasRef} style={{ display: 'none' }}></canvas>
       <canvas ref={compositionCanvasRef} style={{ display: 'none' }}></canvas>
     </div>
