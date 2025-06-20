@@ -80,7 +80,7 @@ const StudioSection: React.FC<StudioSectionProps> = ({
   return (
     <section ref={sectionRef} id="studio" className="relative py-16 sm:py-24 border-t-2 border-stone-200">
       {/* shutter sound */}
-      <audio ref={audioRef} src="/shutter.mp3" preload="auto" style={{ display: 'none' }} />
+      <audio ref={audioRef} src="./shutter.mp3" preload="auto" style={{ display: 'none' }} />
       <div className="absolute top-0 left-0 wow-number font-serif font-extrabold text-[15rem] sm:text-[20rem] text-stone-200/60 opacity-50 select-none">01</div>
       
       <div className="relative z-10">
