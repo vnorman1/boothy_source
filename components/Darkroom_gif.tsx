@@ -21,11 +21,11 @@ const DarkroomGif: React.FC<DarkroomGifProps> = ({ photos }) => {
     setError(null);
     setGifUrl(null); // Újrageneráláskor töröljük a régit
 
-    const gif = new GIF({
-      workers: 2,
-      quality: 10,
-      workerScript: '/gif.worker.js',
-    });
+const gif = new GIF({
+  workers: 2,
+  quality: 10,
+  workerScript: new URL('../gif.worker.js', import.meta.url).toString(),
+});
 
     const imageLoadPromises = photos.map(src => {
       return new Promise<HTMLImageElement>((resolve, reject) => {
