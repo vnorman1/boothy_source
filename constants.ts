@@ -1,6 +1,6 @@
 import { LayoutType, FilterType } from './types';
 
-export const APP_NAME = "Boothsy";
+export const APP_NAME = "Boothy";
 export const APP_DESCRIPTION = "Egy digitális fotóautomata, ami a te zsebedben is elfér. Minőség, stílus és egyszerűség, egy helyen.";
 
 export const LAYOUT_OPTIONS = [
@@ -10,7 +10,7 @@ export const LAYOUT_OPTIONS = [
 
 export const szivecske = "<3"; 
 
-export const COUNTDOWN_VALUES = [3, 5, 10]; // seconds
+export const COUNTDOWN_VALUES = [1, 3, 5, 10]; // seconds
 
 export const FILTER_OPTIONS = [
   { id: FilterType.Original, name: "Eredeti", className: "" },

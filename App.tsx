@@ -472,7 +472,7 @@ const App: React.FC = () => {
           isLoading={isComposing}
           currentLayoutRendersGrid={selectedLayout === LayoutType.Grid}
         />
-<DarkroomGif photos={capturedIndividualPhotos} />
+        <DarkroomGif photos={capturedIndividualPhotos} />
         <GallerySection
           finalImage={composedImage}
           selectedFilter={selectedFilter}

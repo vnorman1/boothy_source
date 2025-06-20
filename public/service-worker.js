@@ -12,7 +12,7 @@ const toCache = [
   '/robots.txt',
   '/shutter.mp3',
   '/sitemap.xml',
-  // statikus assetek, bővítsd ha kell
+  // statikus assetek, még kell a js build után
 ];
 
 self.addEventListener('install', (event) => {
