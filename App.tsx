@@ -6,6 +6,8 @@ import StudioSection from './components/StudioSection';
 import DarkroomSection from './components/DarkroomSection';
 import GallerySection from './components/GallerySection';
 import FooterSection from './components/FooterSection';
+import DarkroomGif from './components/Darkroom_gif'; // Import the GIF component
+import NavSide from './components/nav-side'; // Import the side navigation component
 
 const App: React.FC = () => {
   const [selectedLayout, setSelectedLayout] = useState<LayoutType>(LayoutType.Grid);
@@ -27,81 +29,51 @@ const App: React.FC = () => {
   const [activeCountdown, setActiveCountdown] = useState<number | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [isComposing, setIsComposing] = useState<boolean>(false);
-  const [cameraRestartKey, setCameraRestartKey] = useState(0);
   const [photosPerSession, setPhotosPerSession] = useState<number>(4);
+  const [cameraPermissionRequested, setCameraPermissionRequested] = useState(false);
 
   // Ref a fotózás állapotához, hogy az async ciklusban mindig naprakész legyen
   const isTakingPhotoRef = useRef(isTakingPhoto);
   useEffect(() => { isTakingPhotoRef.current = isTakingPhoto; }, [isTakingPhoto]);
 
-  useEffect(() => {
-    let mounted = true;
-    let activeWebcamStream: MediaStream | null = null;
+  // Új: Kamera indítás/leállítás függvények
+  const startCamera = async () => {
+    if (!cameraPermissionRequested) return;
+    if (stream) return; // Már fut
+    try {
+      setPhotoError(null);
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: useFrontCamera ? 'user' : 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      });
+      setStream(newStream);
+      setIsCameraActive(true);
+      if (videoRef.current) {
+        videoRef.current.srcObject = newStream;
+        videoRef.current.play().catch(err => {
+          console.error("Error playing video:", err);
+        });
+      }
+    } catch (err) {
+      setPhotoError("Kamera nem elérhető. Engedélyezd a böngésződben!");
+      setIsCameraActive(false);
+      setStream(null);
+    }
+  };
 
-    const initCamera = async () => {
-      // Stop any stream currently on the video element from previous effect runs
-      if (videoRef.current && videoRef.current.srcObject) {
-        const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
-        tracks.forEach(track => track.stop());
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+      setIsCameraActive(false);
+      if (videoRef.current) {
         videoRef.current.srcObject = null;
       }
-      // Also ensure global stream state reflects that we are stopping the old one
-      // This is complex if multiple things manage 'stream'. Simpler: this effect owns its stream.
-      // If 'stream' state holds a stream, it *should* be the one this effect is replacing or one that needs stopping.
-      if (stream) {
-          stream.getTracks().forEach(track => track.stop());
-      }
-
-      try {
-        setPhotoError(null);
-        const newStream = await navigator.mediaDevices.getUserMedia({
-          video: { 
-            facingMode: useFrontCamera ? 'user' : 'environment',
-            width: { ideal: 1280 }, // Request higher resolution
-            height: { ideal: 720 }
-          }
-        });
-
-        if (!mounted) {
-          newStream.getTracks().forEach(track => track.stop());
-          return;
-        }
-
-        activeWebcamStream = newStream;
-        setStream(newStream); 
-        setIsCameraActive(true);
-        if (videoRef.current) {
-          videoRef.current.srcObject = newStream;
-          // Ensure video starts playing
-          videoRef.current.play().catch(err => {
-            console.error("Error playing video:", err);
-          });
-        }
-      } catch (err) {
-        if (!mounted) return;
-        console.error("Error accessing camera:", err);
-        setPhotoError("Kamera nem elérhető. Engedélyezd a böngésződben!");
-        setIsCameraActive(false);
-        setStream(null); // Clear stream state on error
-      }
-    };
-
-    initCamera();
-
-    return () => {
-      mounted = false;
-      if (activeWebcamStream) {
-        activeWebcamStream.getTracks().forEach(track => track.stop());
-      }
-      // If the stream set by this specific effect instance is still on videoRef, clear it.
-      if (videoRef.current && videoRef.current.srcObject === activeWebcamStream) {
-          videoRef.current.srcObject = null;
-      }
-      // Do not set global 'stream' to null here, as a new effect (e.g. from cameraRestartKey change)
-      // might have already started a new stream. The new effect run will handle its own setup.
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [useFrontCamera, cameraRestartKey]); // videoRef is stable. setState functions are stable.
+    }
+  };
 
   // Mindig állítsuk be a video elem srcObject-ját, ha a stream vagy a ref változik
   useEffect(() => {
@@ -323,21 +295,6 @@ const App: React.FC = () => {
     }
   };
   
-  const getCanvasFilterString = (filter: FilterType): string => {
-    switch (filter) {
-      case FilterType.Original:
-        return 'none';
-      case FilterType.BlackAndWhite:
-        return 'grayscale(1)';
-      case FilterType.Sepia:
-        return 'sepia(1)';
-      case FilterType.Vintage:
-        return 'sepia(0.6) contrast(1.1) brightness(0.9) saturate(1.2)';
-      default:
-        return 'none';
-    }
-  };
-
   const handleDownload = () => {
     if (!composedImage || !compositionCanvasRef.current) return;
 
@@ -432,7 +389,7 @@ const App: React.FC = () => {
     setIsComposing(false);
     
     if (!isCameraActive) {
-      setCameraRestartKey(key => key + 1); // Trigger camera re-init by changing key
+      // setCameraRestartKey(key => key + 1); // Eltávolítva, már nem kell újraindítani kulccsal
     }
     // Smooth scroll to studio section
     requestAnimationFrame(() => {
@@ -463,8 +420,18 @@ const App: React.FC = () => {
     }
   }, [selectedLayout]);
 
+  // Ha a felhasználó engedélyezi a kamerát, azonnal próbáljuk indítani
+  useEffect(() => {
+    if (cameraPermissionRequested) {
+      startCamera();
+    }
+    // csak cameraPermissionRequested változásra
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cameraPermissionRequested]);
+
   return (
     <div className="bg-stone-50 min-h-screen">
+      <NavSide />
       <HeroSection />
       <main className="container mx-auto max-w-5xl px-4">
         <StudioSection
@@ -493,6 +460,10 @@ const App: React.FC = () => {
           capturedIndividualPhotos={capturedIndividualPhotos}
           photosPerSession={photosPerSession}
           setPhotosPerSession={setPhotosPerSession}
+          onRequestCameraStart={startCamera}
+          onRequestCameraStop={stopCamera}
+          cameraPermissionRequested={cameraPermissionRequested}
+          setCameraPermissionRequested={setCameraPermissionRequested}
         />
         <DarkroomSection
           composedImage={composedImage}
@@ -501,6 +472,7 @@ const App: React.FC = () => {
           isLoading={isComposing}
           currentLayoutRendersGrid={selectedLayout === LayoutType.Grid}
         />
+<DarkroomGif photos={capturedIndividualPhotos} />
         <GallerySection
           finalImage={composedImage}
           selectedFilter={selectedFilter}

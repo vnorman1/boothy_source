@@ -96,8 +96,8 @@ const GallerySection: React.FC<GallerySectionProps> = ({
           try {
             await navigator.share({
               files: [new File([blob], `boothy_image_${Date.now()}.jpg`, { type: 'image/jpeg' })],
-              title: 'Boothsy képem',
-              text: 'Nézd meg ezt a képet, amit a Boothsy-val csináltam! https://vnorman1.github.io/boothsy/ ',
+              title: 'Boothy képem',
+              text: 'Nézd meg ezt a képet, amit a Boothy-val csináltam! https://vnorman1.github.io/boothy/ ',
             });
           } catch (error) {
             if (!(error && (error as any).name === 'AbortError')) {
@@ -190,7 +190,7 @@ const GallerySection: React.FC<GallerySectionProps> = ({
         <div className="mt-8">
           <button 
             onClick={onNewPhotoshoot}
-            className="text-stone-500 hover:text-orange-600 font-medium transition-colors"
+            className="text-stone-500 hover:text-amber-600 font-medium transition-colors"
           >
             Új fotósorozat készítése
           </button>

@@ -23,6 +23,10 @@ interface StudioSectionProps {
   capturedIndividualPhotos: string[];
   photosPerSession: number;
   setPhotosPerSession: (n: number) => void;
+  onRequestCameraStart?: () => void;
+  onRequestCameraStop?: () => void;
+  cameraPermissionRequested: boolean;
+  setCameraPermissionRequested: (v: boolean) => void;
 }
 
 const StudioSection: React.FC<StudioSectionProps> = ({
@@ -30,10 +34,33 @@ const StudioSection: React.FC<StudioSectionProps> = ({
   useFrontCamera, toggleCamera, isFlashOn, toggleFlash,
   startPhotoSession, isTakingPhoto, activeCountdown,
   stream, videoRef, isCameraActive, photoError,
-  capturedIndividualPhotos, photosPerSession, setPhotosPerSession
+  capturedIndividualPhotos, photosPerSession, setPhotosPerSession,
+  onRequestCameraStart, onRequestCameraStop,
+  cameraPermissionRequested, setCameraPermissionRequested
 }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const prevPhotoCount = useRef<number>(capturedIndividualPhotos.length);
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const wasVisible = useRef(false);
+
+  useEffect(() => {
+    const ref = sectionRef.current;
+    if (!ref) return;
+    const observer = new window.IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          if (!wasVisible.current && onRequestCameraStart) onRequestCameraStart();
+          wasVisible.current = true;
+        } else {
+          if (wasVisible.current && onRequestCameraStop) onRequestCameraStop();
+          wasVisible.current = false;
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(ref);
+    return () => observer.disconnect();
+  }, [onRequestCameraStart, onRequestCameraStop]);
 
   useEffect(() => {
     if (capturedIndividualPhotos.length > prevPhotoCount.current) {
@@ -51,7 +78,7 @@ const StudioSection: React.FC<StudioSectionProps> = ({
   };
   
   return (
-    <section id="studio" className="relative py-16 sm:py-24 border-t-2 border-stone-200">
+    <section ref={sectionRef} id="studio" className="relative py-16 sm:py-24 border-t-2 border-stone-200">
       {/* shutter sound */}
       <audio ref={audioRef} src="/shutter.mp3" preload="auto" style={{ display: 'none' }} />
       <div className="absolute top-0 left-0 wow-number font-serif font-extrabold text-[15rem] sm:text-[20rem] text-stone-200/60 opacity-50 select-none">01</div>
@@ -71,6 +98,10 @@ const StudioSection: React.FC<StudioSectionProps> = ({
               countdown={activeCountdown}
               useFrontCamera={useFrontCamera}
               photoError={photoError}
+              onRequestCameraStart={onRequestCameraStart}
+              onRequestCameraStop={onRequestCameraStop}
+              cameraPermissionRequested={cameraPermissionRequested}
+              setCameraPermissionRequested={setCameraPermissionRequested}
             />
              {/* Captured photo thumbnails */}
             {capturedIndividualPhotos.length > 0 && (
@@ -98,7 +129,7 @@ const StudioSection: React.FC<StudioSectionProps> = ({
                   <div 
                     key={layout.id}
                     onClick={() => !isTakingPhoto && setSelectedLayout(layout.id)}
-                    className={`cursor-pointer group p-2 rounded-lg ring-2 bg-white hover:bg-white/80 transition-all duration-300 ${selectedLayout === layout.id ? 'ring-orange-600' : 'ring-transparent hover:ring-orange-600/50'}`}
+                    className={`cursor-pointer group p-2 rounded-lg ring-2 bg-white hover:bg-white/80 transition-all duration-300 ${selectedLayout === layout.id ? 'ring-amber-600' : 'ring-transparent hover:ring-amber-600/50'}`}
                   >
                     {getLayoutIcon(layout.id)}
                     <p className={`text-center font-medium mt-2 text-sm ${selectedLayout === layout.id ? 'text-stone-900' : 'text-stone-600 group-hover:text-stone-900'}`}>{layout.name}</p>
@@ -149,7 +180,7 @@ const StudioSection: React.FC<StudioSectionProps> = ({
                       title="Kamera váltás" 
                       onClick={toggleCamera}
                       disabled={isTakingPhoto}
-                      className={`p-3 rounded-full hover:bg-stone-300 transition ${useFrontCamera ? 'bg-orange-200 hover:bg-orange-300' : 'bg-stone-200'}`}
+                      className={`p-3 rounded-full hover:bg-stone-300 transition ${useFrontCamera ? 'bg-amber-200 hover:bg-amber-300' : 'bg-stone-200'}`}
                     >
                       <ModernCameraSwitchIcon className="h-5 w-5" />
                     </button>
@@ -174,7 +205,7 @@ const StudioSection: React.FC<StudioSectionProps> = ({
                 document.getElementById('studio')?.scrollIntoView({ behavior: 'smooth' });
                 if (!isTakingPhoto && isCameraActive) startPhotoSession();
               }}
-              className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-5 px-6 rounded-2xl transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-orange-300 shadow-xl shadow-orange-500/30 text-xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-5 px-6 rounded-2xl transition-all transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-amber-300 shadow-xl shadow-amber-500/30 text-xl flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ pointerEvents: isTakingPhoto || !isCameraActive ? 'none' : 'auto', opacity: isTakingPhoto || !isCameraActive ? 0.5 : 1 }}
             >
               <TakePhotoIcon />

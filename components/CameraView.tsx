@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
 interface CameraViewProps {
   stream: MediaStream | null;
@@ -8,9 +8,31 @@ interface CameraViewProps {
   countdown: number | null;
   useFrontCamera: boolean;
   photoError: string | null;
+  onRequestCameraStart?: () => void;
+  onRequestCameraStop?: () => void;
+  cameraPermissionRequested: boolean;
+  setCameraPermissionRequested: (v: boolean) => void;
 }
 
-const CameraView: React.FC<CameraViewProps> = ({ stream, videoRef, isCameraActive, isTakingPhoto, countdown, useFrontCamera, photoError }) => {
+const CameraView: React.FC<CameraViewProps> = ({ stream, videoRef, isCameraActive, isTakingPhoto, countdown, useFrontCamera, photoError, onRequestCameraStart, onRequestCameraStop, cameraPermissionRequested, setCameraPermissionRequested }) => {
+
+  useEffect(() => {
+    // Az IntersectionObserver logikát eltávolítjuk innen, mert már a StudioSection figyeli a láthatóságot
+  }, [onRequestCameraStart, onRequestCameraStop]);
+
+  if (!cameraPermissionRequested) {
+    return (
+      <div className="w-full aspect-[1/1] bg-black rounded-2xl flex items-center justify-center p-2 sm:p-8 shadow-2xl ring-4 ring-offset-4 ring-stone-900 ring-offset-stone-50 relative overflow-hidden">
+        <button
+          className="bg-amber-600 hover:bg-amber-700 text-white font-bold py-4 px-4 rounded-3xl text-xl shadow-lg transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-amber-300"
+          onClick={() => setCameraPermissionRequested(true)}
+        >
+          Kamera engedélyezése
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full aspect-[1/1] bg-black rounded-2xl flex items-center justify-center p-2 sm:p-8 shadow-2xl ring-4 ring-offset-4 ring-stone-900 ring-offset-stone-50 relative overflow-hidden">
       {isCameraActive && stream ? (
