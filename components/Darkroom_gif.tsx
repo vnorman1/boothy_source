@@ -90,7 +90,7 @@ const gif = new GIF({
 
   return (
     <section id="gif" className="relative py-16 sm:py-24 border-t-2 border-stone-200">
-      <div className="absolute top-0 left-0 wow-number font-serif font-extrabold text-[15rem] sm:text-[20rem] text-stone-200/60 opacity-50 select-none pointer-events-none">2</div>
+      <div className="absolute top-0 left-0 wow-number font-serif font-extrabold text-[15rem] sm:text-[20rem] text-stone-200/60 opacity-50 select-none pointer-events-none">02</div>
       
       <div className="relative z-10">
         <h2 className="font-serif text-4xl sm:text-5xl font-bold mb-4">Animált GIF Készítő</h2>
